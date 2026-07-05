@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace BuiltByBerry\LaravelSwarmPulse\Livewire;
+
+use BuiltByBerry\LaravelSwarmPulse\Support\SwarmPulseKey;
+use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\View;
+use Laravel\Pulse\Livewire\Card;
+use Livewire\Attributes\Lazy;
+
+/**
+ * @internal
+ */
+#[Lazy]
+class SwarmSteps extends Card
+{
+    public function render(): Renderable
+    {
+        [$steps, $time, $runAt] = $this->remember(fn () => $this->resolveSteps());
+
+        return View::make('swarm-pulse::livewire.steps', [
+            'steps' => $steps,
+            'time' => $time,
+            'runAt' => $runAt,
+        ]);
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    protected function resolveSteps(): Collection
+    {
+        return $this->aggregate('swarm_step_duration', ['avg', 'count'], 'avg', limit: 25)
+            ->filter(fn ($row): bool => is_object($row) && is_string($row->key ?? null))
+            ->map(function ($row): object {
+                $parts = SwarmPulseKey::parseStepDuration($row->key);
+
+                return (object) [
+                    'swarmClass' => $parts['swarmClass'],
+                    'topology' => $parts['topology'],
+                    'agentClass' => $parts['agentClass'],
+                    'averageDurationMs' => (int) round((float) $row->avg),
+                    'count' => (int) $row->count,
+                ];
+            })
+            ->values();
+    }
+}
