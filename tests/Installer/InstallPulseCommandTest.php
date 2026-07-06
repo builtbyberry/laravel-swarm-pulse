@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use BuiltByBerry\LaravelSwarmPulse\Commands\InstallPulseCommand;
-use BuiltByBerry\LaravelSwarmPulse\Tests\Installer\InstallerTestCase;
+use BuiltByBerry\LaravelSwarmPulse\Tests\Installer\PulseInstallerTestCase;
 use Illuminate\Contracts\Console\Kernel;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-uses(InstallerTestCase::class);
+uses(PulseInstallerTestCase::class);
 
 /**
  * Minimal stand-in for the stock laravel/pulse config so we can assert that
