@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 7
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - src
+    tmpDir: storage/phpstan
+    ignoreErrors:
+        # Pulse aggregate query rows are stdClass; naming every dynamic column
+        # as a typed shape would not be practical.
+        -
+            identifier: property.notFound
+            path: src/Livewire/SwarmSteps.php
