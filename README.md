@@ -5,9 +5,9 @@
 dashboard cards for swarm runs, step durations, memory growth, and audit
 outbox observability.
 
-This package was extracted from `builtbyberry/laravel-swarm` core in v0.17.0
+This package was extracted from `builtbyberry/laravel-swarm` core in v0.17.1
 to keep the core package's dependency footprint small. If you were using
-Pulse recorders or cards from `laravel-swarm` before v0.17.0, install this
+Pulse recorders or cards from `laravel-swarm` before v0.17.1, install this
 package and update your imports — see
 [UPGRADING.md](https://github.com/builtbyberry/laravel-swarm/blob/main/UPGRADING.md)
 in core for the migration steps.
@@ -18,11 +18,10 @@ in core for the migration steps.
 composer require builtbyberry/laravel-swarm-pulse
 ```
 
-Then, once Pulse itself is installed and published:
+This pulls in `laravel/pulse` as a dependency. Then publish and migrate
+Pulse, and run the swarm installer:
 
 ```bash
-composer require laravel/pulse
-
 php artisan vendor:publish --provider="Laravel\Pulse\PulseServiceProvider"
 
 php artisan migrate
