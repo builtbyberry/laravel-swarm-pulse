@@ -2,6 +2,22 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
+## v0.1.4 - 2026-07-21
+
+### Fixed
+
+- Widened the `builtbyberry/laravel-swarm` constraint to `^0.22 || ^0.23` so the
+  package installs alongside core v0.23.0 ("Compatibility and Correctness"). The
+  previous `^0.17 || … || ^0.22` capped at 0.22 and blocked any application on
+  current core. The supported floor is now 0.22: an application still on core
+  0.17–0.21 keeps resolving to v0.1.3 (Composer picks the highest release
+  satisfying both constraints), so nothing regresses — it simply does not
+  receive this release.
+- No behavioural change. v0.23 adds no public API, and its one breaking change
+  (custom `MemoryPropagationPolicy` re-typing its `present()` agent parameter)
+  is not a surface this package touches. The full suite (23 tests, 123
+  assertions) passes against core v0.23.0.
+
 ## v0.1.3 - 2026-07-19
 
 ### Fixed
