@@ -2,6 +2,15 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
+## v0.1.5 - 2026-09-03
+
+### Changed
+
+- Supports PHP `^8.4` and extends the verified Laravel Swarm range through
+  `^0.25`, retaining the v0.1.4 floor of `^0.22`.
+- CI covers PHP 8.4 and 8.5 against latest and lowest dependency sets. The
+  recorders, cards, and installer behavior are unchanged.
+
 ## v0.1.4 - 2026-07-21
 
 ### Fixed

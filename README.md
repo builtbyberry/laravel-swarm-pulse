@@ -12,6 +12,11 @@ package and update your imports — see
 [UPGRADING.md](https://github.com/builtbyberry/laravel-swarm/blob/main/UPGRADING.md)
 in core for the migration steps.
 
+## Requirements
+
+- PHP 8.4+
+- `builtbyberry/laravel-swarm` ^0.22 through ^0.25
+
 ## Installation
 
 ```bash
