@@ -16,6 +16,7 @@ in core for the migration steps.
 
 - PHP 8.4+
 - `builtbyberry/laravel-swarm` ^0.22 through ^0.25
+- Livewire ^3.0 or ^4.1
 
 ## Installation
 
