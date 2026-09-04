@@ -2,7 +2,7 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
-## v0.1.6 - unreleased
+## v0.1.6 - 2026-09-03
 
 ### Changed
 
