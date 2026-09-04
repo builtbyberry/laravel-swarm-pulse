@@ -2,6 +2,20 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
+## v0.1.6 - unreleased
+
+### Changed
+
+- Widens the Livewire compatibility range from `^3.0` to `^3.0 || ^4.1`.
+  Laravel 13 applications can therefore install this package alongside
+  Filament 5.7, which requires Livewire 4.1. The Pulse cards use APIs shared by
+  both supported Livewire majors; CI runs the complete suite on PHP 8.4 and
+  8.5 against Livewire 4 in the stable-latest lanes and Livewire 3 in the
+  lowest-dependency lanes.
+- Removes the temporary pre-tag Composer VCS bootstrap now that Laravel Swarm
+  v0.25.0 is published. Stable-latest CI resolves the Packagist release and
+  verifies its exact source commit.
+
 ## v0.1.5 - 2026-09-03
 
 ### Changed
