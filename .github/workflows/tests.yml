@@ -21,8 +21,10 @@ jobs:
           - '8.4'
           - '8.5'
         dependencies:
-          - stable-latest
           - lowest
+          - published-0.25
+          - adoption-minimum
+          - adoption-current
 
     steps:
       - name: Checkout code
@@ -37,65 +39,41 @@ jobs:
           tools: composer:v2
           ini-values: memory_limit=1G
 
-      - name: Install dependencies
-        if: matrix.dependencies == 'stable-latest'
+      - name: Test dependency evidence guards
+        run: php .github/scripts/compatibility-test.php
+
+      - name: Prepare published baseline
+        if: matrix.dependencies == 'published-0.25'
+        run: php .github/scripts/compatibility.php prepare published-0.25
+
+      # This manifest and archive are pinned candidate inputs, not a published tag.
+      - name: Prepare pinned core candidate
+        if: startsWith(matrix.dependencies, 'adoption-')
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/builtbyberry/laravel-swarm/e25842cab4291837dcce2ff6f4815e58feab9079/composer.json \
+            --output "$RUNNER_TEMP/core-candidate.json"
+          php .github/scripts/compatibility.php prepare '${{ matrix.dependencies }}' "$RUNNER_TEMP/core-candidate.json"
+
+      - name: Install current stable dependencies
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
         run: composer update --prefer-stable --prefer-dist --no-interaction --no-progress
 
       - name: Install lowest dependencies
-        if: matrix.dependencies == 'lowest'
+        if: matrix.dependencies == 'lowest' || matrix.dependencies == 'adoption-minimum'
         run: composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction --no-progress
 
-      - name: Verify published Laravel Swarm release
-        if: matrix.dependencies == 'stable-latest'
-        shell: bash
-        run: |
-          composer show builtbyberry/laravel-swarm --format=json | php -r '
-            $package = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
-            $versions = $package["versions"] ?? [];
-            if (! in_array("v0.25.0", $versions, true)) {
-                fwrite(STDERR, "Expected published Laravel Swarm v0.25.0.\n");
-                exit(1);
-            }
-
-            $reference = $package["source"]["reference"] ?? null;
-            $expectedReference = "be7df78e8fde12362cfff9007cfe723d572a5e4f";
-            if ($reference !== $expectedReference) {
-                fwrite(STDERR, "Expected Laravel Swarm source.reference {$expectedReference}; got ".var_export($reference, true).".\n");
-                exit(1);
-            }
-
-            echo "Installed published Laravel Swarm v0.25.0 at {$reference}.\n";
-          '
-
-      - name: Verify Livewire compatibility lane
-        shell: bash
-        run: |
-          expected_major=3
-          if [ "${{ matrix.dependencies }}" = "stable-latest" ]; then
-            expected_major=4
-          fi
-
-          composer show livewire/livewire --format=json | php -r '
-            $package = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
-            $version = ltrim($package["versions"][0] ?? "", "v");
-            $major = explode(".", $version)[0] ?? "";
-            $expectedMajor = $argv[1];
-
-            if ($major !== $expectedMajor) {
-                fwrite(STDERR, "Expected Livewire {$expectedMajor}.x; got ".var_export($version, true).".\n");
-                exit(1);
-            }
-
-            echo "Installed Livewire {$version} for the {$expectedMajor}.x compatibility lane.\n";
-          ' "$expected_major"
+      - name: Verify installed and locked dependencies
+        run: php .github/scripts/compatibility.php verify '${{ matrix.dependencies }}'
 
       - name: Execute tests
         run: composer test
 
       - name: Execute static analysis
-        if: matrix.dependencies == 'stable-latest'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
         run: composer analyse
 
       - name: Execute code style check
-        if: matrix.dependencies == 'stable-latest'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
         run: composer lint

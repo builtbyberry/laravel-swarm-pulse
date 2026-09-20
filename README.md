@@ -15,7 +15,7 @@ in core for the migration steps.
 ## Requirements
 
 - PHP 8.4+
-- `builtbyberry/laravel-swarm` ^0.22 through ^0.25
+- `builtbyberry/laravel-swarm` ^0.22 through ^0.26
 - Livewire ^3.0 or ^4.1
 
 ## Installation
@@ -66,3 +66,9 @@ the pre-extraction integration, only the namespace and package boundary moved.
 ## License
 
 MIT.
+
+## Compatibility checks
+
+CI retains a published Laravel Swarm v0.25.0 baseline and lowest-dependency coverage on PHP 8.4 and 8.5, including Livewire 3 and 4. The v0.26 adoption lanes exercise the recorders, dashboard cards, audit outbox, memory metrics, and installer against the pinned core candidate `e25842cab4291837dcce2ff6f4815e58feab9079`, with official Laravel AI v0.11.2 and current stable 0.11.x dependencies.
+
+These adoption lanes use temporary Composer package metadata for the candidate; they are not proof that v0.26 is published or installable from released packages. The committed package manifest retains ordinary version constraints. Published ecosystem installability and the core post-main moving-dev gate remain separate follow-up checks.

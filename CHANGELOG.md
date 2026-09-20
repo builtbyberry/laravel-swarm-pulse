@@ -2,6 +2,11 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
+## Unreleased
+
+- Allow Laravel Swarm `^0.26` alongside the existing `^0.22`–`^0.25` ranges without changing PHP, Laravel, Pulse, or Livewire requirements.
+- Preserve lowest-dependency and published v0.25.0 CI coverage; add pinned v0.26 candidate checks with official Laravel AI v0.11.2 and current stable 0.11.x dependencies. Candidate checks do not establish published-package installability.
+
 ## v0.1.6 - 2026-09-03
 
 ### Changed
