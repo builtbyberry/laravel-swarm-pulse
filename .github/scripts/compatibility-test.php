@@ -73,9 +73,18 @@ foreach (LANES as $lane) {
         rejects(fn () => verify($bad, $bad, $lane), 'archive ref mismatch');
         $bad = $set;
         $bad[$name]['source']['reference'] = 'main';
+        $bad[$name]['dist']['reference'] = 'main';
+        $bad[$name]['dist']['url'] = "https://api.github.com/repos/{$name}/zipball/main";
         rejects(fn () => verify($bad, $bad, $lane), 'moving source ref');
-        $controls += 4;
+        $bad = $set;
+        $bad[$name]['source']['type'] = 'svn';
+        rejects(fn () => verify($bad, $bad, $lane), 'wrong source type');
+        $controls += 5;
     }
+    $differentInstalled = $set;
+    $differentInstalled['laravel/framework'] = package('laravel/framework', 'v13.17.0', str_repeat('e', 40));
+    rejects(fn () => verify($set, $differentInstalled, $lane), 'valid installed package differs from lock');
+    $controls++;
     foreach ([CORE, 'laravel/ai'] as $name) {
         if (($name === CORE && $lane === 'lowest') || ($name === 'laravel/ai' && $lane !== 'adoption-minimum')) {
             continue;
@@ -86,7 +95,7 @@ foreach (LANES as $lane) {
         $controls++;
     }
 }
-rejects(fn () => prepare($root, 'adoption-current', ['name' => 'example/fork']), 'wrong manifest identity');
+rejects(fn () => prepare($root, 'adoption-current', ['name' => 'example/fork', 'require' => ['laravel/ai' => '^0.11.2']]), 'wrong manifest identity');
 rejects(fn () => prepare($root, 'adoption-current', ['name' => CORE, 'require' => ['laravel/ai' => '^0.10']]), 'wrong manifest contract');
 $badRoot = $root;
 $badRoot['require'][CORE] = '^0.26';
