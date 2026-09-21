@@ -2,7 +2,7 @@
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 
-## Unreleased
+## v0.1.7 - 2026-09-21
 
 - Register the Pulse service provider in the development Testbench configuration so Larastan can discover the package views during analysis.
 
