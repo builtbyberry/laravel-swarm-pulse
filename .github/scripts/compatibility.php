@@ -7,8 +7,10 @@ namespace PulseCompatibility;
 const CORE = 'builtbyberry/laravel-swarm';
 const CANDIDATE_REF = 'e25842cab4291837dcce2ff6f4815e58feab9079';
 const PUBLISHED_REF = 'be7df78e8fde12362cfff9007cfe723d572a5e4f';
+const NATIVE_CANDIDATE_REF = '48ad4ef690363ca40ba7d3bd50e63e7fbe76ba4b';
+const NATIVE_AI_MINIMUM_REF = '101c7ea33cd8569d82570f753fbf38e48b7d3d95';
 const AI_MINIMUM_REF = 'ee2c5162838d440c4e2e629ea93c8c87e838eaed';
-const LANES = ['lowest', 'published-0.25', 'adoption-minimum', 'adoption-current'];
+const LANES = ['lowest', 'published-0.25', 'adoption-minimum', 'adoption-current', 'native1-minimum', 'native1-current'];
 
 function check(bool $condition, string $message): void
 {
@@ -25,20 +27,24 @@ function readJson(string $path): array
 function prepare(array $root, string $lane, ?array $candidate): array
 {
     check(in_array($lane, LANES, true), 'Unknown compatibility lane.');
-    check(($root['require'][CORE] ?? null) === '^0.22 || ^0.23 || ^0.24 || ^0.25 || ^0.26', 'Keep the complete supported core range.');
+    check(($root['require'][CORE] ?? null) === '^0.22 || ^0.23 || ^0.24 || ^0.25 || ^0.26 || ^0.27', 'Keep the complete supported core range.');
+    $native = str_starts_with($lane, 'native1-');
+    $candidateRef = $native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF;
+    $candidateVersion = $native ? '0.27.0' : '0.26.0';
+    $aiRange = $native ? '^1.0' : '^0.11.2';
     if ($lane === 'published-0.25') {
         $root['require'][CORE] = '0.25.0';
-    } elseif (str_starts_with($lane, 'adoption-')) {
+    } elseif ($native || str_starts_with($lane, 'adoption-')) {
         check(($candidate['name'] ?? null) === CORE, 'Expected the official core candidate manifest.');
-        check(($candidate['require']['laravel/ai'] ?? null) === '^0.11.2', 'Unexpected candidate AI contract.');
+        check(($candidate['require']['laravel/ai'] ?? null) === $aiRange, 'Unexpected candidate AI contract.');
         // This synthetic version is CI-only: the source and archive are immutable.
-        $candidate['version'] = '0.26.0';
-        $candidate['source'] = ['type' => 'git', 'url' => 'https://github.com/builtbyberry/laravel-swarm.git', 'reference' => CANDIDATE_REF];
-        $candidate['dist'] = ['type' => 'zip', 'url' => 'https://api.github.com/repos/builtbyberry/laravel-swarm/zipball/'.CANDIDATE_REF, 'reference' => CANDIDATE_REF];
+        $candidate['version'] = $candidateVersion;
+        $candidate['source'] = ['type' => 'git', 'url' => 'https://github.com/builtbyberry/laravel-swarm.git', 'reference' => $candidateRef];
+        $candidate['dist'] = ['type' => 'zip', 'url' => 'https://api.github.com/repos/builtbyberry/laravel-swarm/zipball/'.$candidateRef, 'reference' => $candidateRef];
         unset($candidate['require-dev'], $candidate['scripts'], $candidate['repositories']);
         $root['repositories'] = [['type' => 'package', 'package' => $candidate]];
-        $root['require'][CORE] = '0.26.0';
-        $root['require-dev']['laravel/ai'] = $lane === 'adoption-minimum' ? '0.11.2' : '^0.11.2';
+        $root['require'][CORE] = $candidateVersion;
+        $root['require-dev']['laravel/ai'] = str_ends_with($lane, '-minimum') ? ($native ? '1.0.0' : '0.11.2') : $aiRange;
     }
 
     return $root;
@@ -52,7 +58,8 @@ function packages(array $packages): array
 function verify(array $locked, array $installed, string $lane): array
 {
     check(in_array($lane, LANES, true), 'Unknown compatibility lane.');
-    $adoption = str_starts_with($lane, 'adoption-');
+    $native = str_starts_with($lane, 'native1-');
+    $adoption = $native || str_starts_with($lane, 'adoption-');
     $evidence = [];
     foreach ([CORE, 'laravel/ai', 'laravel/framework', 'livewire/livewire'] as $name) {
         $lock = $locked[$name] ?? [];
@@ -72,23 +79,28 @@ function verify(array $locked, array $installed, string $lane): array
             && ($actual['dist']['url'] ?? null) === "https://api.github.com/repos/{$repository}/zipball/{$ref}", "{$name}: expected matching official archive.");
         if ($name === CORE) {
             if ($adoption || $lane === 'published-0.25') {
-                check($version === ($adoption ? '0.26.0' : '0.25.0'), 'Wrong core version for lane.');
-                check($ref === ($adoption ? CANDIDATE_REF : PUBLISHED_REF), 'Wrong core source for lane.');
+                check($version === ($adoption ? ($native ? '0.27.0' : '0.26.0') : '0.25.0'), 'Wrong core version for lane.');
+                check($ref === ($adoption ? ($native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF) : PUBLISHED_REF), 'Wrong core source for lane.');
             } else {
                 check((bool) preg_match('/^0\.(22|23|24|25)\./', $version), 'Lowest lane must retain a supported pre-0.26 core.');
             }
         } elseif ($name === 'laravel/ai' && $adoption) {
-            check(version_compare($version, '0.11.2', '>=') && version_compare($version, '0.12.0', '<'), 'Expected official stable AI ^0.11.2.');
-            if ($lane === 'adoption-minimum') {
-                check($version === '0.11.2' && $ref === AI_MINIMUM_REF, 'Expected exact official AI minimum.');
+            check(version_compare($version, $native ? '1.0.0' : '0.11.2', '>=') && version_compare($version, $native ? '2.0.0' : '0.12.0', '<'), 'Expected official stable AI for the selected generation.');
+            if (str_ends_with($lane, '-minimum')) {
+                check($version === ($native ? '1.0.0' : '0.11.2') && $ref === ($native ? NATIVE_AI_MINIMUM_REF : AI_MINIMUM_REF), 'Expected exact official AI minimum.');
             }
         } elseif ($name === 'laravel/framework') {
             check(str_starts_with($version, '13.'), 'Expected Laravel 13.');
         } elseif ($name === 'livewire/livewire') {
-            $major = in_array($lane, ['lowest', 'adoption-minimum'], true) ? '3.' : '4.';
+            $major = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum'], true) ? '3.' : '4.';
             check(str_starts_with($version, $major), 'Wrong Livewire major for lane.');
         }
         $evidence[] = "{$name} {$actual['version']} {$ref}";
+    }
+
+    if ($native) {
+        check(($locked[CORE]['require']['laravel/ai'] ?? null) === '^1.0'
+            && ($installed[CORE]['require']['laravel/ai'] ?? null) === '^1.0', 'Expected native core AI contract in lock and installed metadata.');
     }
 
     return $evidence;
