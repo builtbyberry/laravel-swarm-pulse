@@ -6,11 +6,11 @@ Compatibility with Laravel Swarm v0.27.0 and Laravel AI 1.0.
 
 ### Added
 
-_To be filled in during release wrap-up._
+- Add Laravel Swarm `^0.27` compatibility with official Laravel AI 1.x, retaining the existing `^0.22`–`^0.26` ranges.
 
 ### Changed
 
-_To be filled in during release wrap-up._
+- Verify the actual recorders, aggregates, cards and installer on PHP 8.4/8.5 with pinned core 0.27 and native AI minimum/current dependencies. Preserve earlier compatibility lanes and reject stale or mismatched candidate provenance. No runtime, schema or configuration change.
 
 All notable changes to `builtbyberry/laravel-swarm-pulse` are documented here.
 

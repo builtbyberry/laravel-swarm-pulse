@@ -26,22 +26,27 @@ function rejects(callable $callback, string $label): void
 }
 
 $root = readJson(__DIR__.'/../../composer.json');
-$candidate = ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']];
 $controls = 0;
 foreach (LANES as $lane) {
-    $adoption = str_starts_with($lane, 'adoption-');
-    $minimum = in_array($lane, ['lowest', 'adoption-minimum'], true);
+    $native = str_starts_with($lane, 'native1-');
+    $adoption = $native || str_starts_with($lane, 'adoption-');
+    $candidate = ['name' => CORE, 'require' => ['laravel/ai' => $native ? '^1.0' : '^0.11.2']];
+    $candidateRef = $native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF;
+    $minimum = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum'], true);
     $set = packages([
-        package(CORE, $adoption ? '0.26.0' : 'v0.25.0', $adoption ? CANDIDATE_REF : PUBLISHED_REF),
-        package('laravel/ai', $adoption ? 'v0.11.2' : 'v0.10.0', $adoption ? AI_MINIMUM_REF : str_repeat('a', 40)),
+        package(CORE, $adoption ? ($native ? '0.27.0' : '0.26.0') : 'v0.25.0', $adoption ? $candidateRef : PUBLISHED_REF),
+        package('laravel/ai', $adoption ? ($native ? 'v1.0.0' : 'v0.11.2') : 'v0.10.0', $adoption ? ($native ? NATIVE_AI_MINIMUM_REF : AI_MINIMUM_REF) : str_repeat('a', 40)),
         package('laravel/framework', 'v13.16.0', str_repeat('b', 40)),
         package('livewire/livewire', $minimum ? 'v3.0.0' : 'v4.1.0', str_repeat('c', 40)),
     ]);
+    if ($native) {
+        $set[CORE]['require']['laravel/ai'] = '^1.0';
+    }
     verify($set, $set, $lane);
     $prepared = prepare($root, $lane, $candidate);
     check($lane !== 'lowest' || $prepared === $root, 'Lowest lane must keep original constraints.');
-    check(! $adoption || $prepared['repositories'][0]['package']['source']['reference'] === CANDIDATE_REF, 'Candidate must be immutable.');
-    check(! $adoption || $prepared['require-dev']['laravel/ai'] === ($lane === 'adoption-minimum' ? '0.11.2' : '^0.11.2'), 'Wrong AI lane pin.');
+    check(! $adoption || $prepared['repositories'][0]['package']['source']['reference'] === $candidateRef, 'Candidate must be immutable.');
+    check(! $adoption || $prepared['require-dev']['laravel/ai'] === ($minimum ? ($native ? '1.0.0' : '0.11.2') : ($native ? '^1.0' : '^0.11.2')), 'Wrong AI lane pin.');
     check($lane !== 'published-0.25' || $prepared['require'][CORE] === '0.25.0', 'Published lane must stay pinned.');
 
     // Mutate the Composer evidence shape, both independently and in agreement.
@@ -86,13 +91,26 @@ foreach (LANES as $lane) {
     rejects(fn () => verify($set, $differentInstalled, $lane), 'valid installed package differs from lock');
     $controls++;
     foreach ([CORE, 'laravel/ai'] as $name) {
-        if (($name === CORE && $lane === 'lowest') || ($name === 'laravel/ai' && $lane !== 'adoption-minimum')) {
+        if (($name === CORE && $lane === 'lowest') || ($name === 'laravel/ai' && ! in_array($lane, ['adoption-minimum', 'native1-minimum'], true))) {
             continue;
         }
         $bad = $set;
-        $bad[$name] = package($name, $set[$name]['version'], str_repeat('d', 40));
+        $bad[$name] = array_replace($set[$name], package($name, $set[$name]['version'], str_repeat('d', 40)));
         rejects(fn () => verify($bad, $bad, $lane), 'wrong pinned commit in otherwise consistent evidence');
         $controls++;
+    }
+    if ($native) {
+        $bad = $set;
+        $bad['laravel/ai'] = package('laravel/ai', 'v0.11.2', AI_MINIMUM_REF);
+        rejects(fn () => verify($bad, $bad, $lane), 'stale AI generation');
+        $bad = $set;
+        $bad[CORE] = package(CORE, '0.26.0', CANDIDATE_REF);
+        rejects(fn () => verify($bad, $bad, $lane), 'stale core generation');
+        $bad = $set;
+        $bad[CORE]['require']['laravel/ai'] = '^0.11.2';
+        rejects(fn () => verify($bad, $bad, $lane), 'stale core AI contract');
+        rejects(fn () => prepare($root, $lane, ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']]), 'stale candidate manifest contract');
+        $controls += 4;
     }
 }
 rejects(fn () => prepare($root, 'adoption-current', ['name' => 'example/fork', 'require' => ['laravel/ai' => '^0.11.2']]), 'wrong manifest identity');
@@ -101,4 +119,4 @@ $badRoot = $root;
 $badRoot['require'][CORE] = '^0.26';
 rejects(fn () => prepare($badRoot, 'adoption-current', $candidate), 'dropped older ranges');
 rejects(fn () => verify([], [], 'unknown'), 'unknown lane');
-echo 'Four positive lanes and '.($controls + 4)." negative dependency controls passed.\n";
+echo 'Six positive lanes and '.($controls + 4)." negative dependency controls passed.\n";
