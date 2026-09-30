@@ -8,9 +8,10 @@ const CORE = 'builtbyberry/laravel-swarm';
 const CANDIDATE_REF = 'e25842cab4291837dcce2ff6f4815e58feab9079';
 const PUBLISHED_REF = 'be7df78e8fde12362cfff9007cfe723d572a5e4f';
 const NATIVE_CANDIDATE_REF = '48ad4ef690363ca40ba7d3bd50e63e7fbe76ba4b';
+const NATIVE_CANDIDATE_028_REF = '6c3da95fcb3bc89a2ec0096346bd6efb11366cda';
 const NATIVE_AI_MINIMUM_REF = '101c7ea33cd8569d82570f753fbf38e48b7d3d95';
 const AI_MINIMUM_REF = 'ee2c5162838d440c4e2e629ea93c8c87e838eaed';
-const LANES = ['lowest', 'published-0.25', 'adoption-minimum', 'adoption-current', 'native1-minimum', 'native1-current'];
+const LANES = ['lowest', 'published-0.25', 'adoption-minimum', 'adoption-current', 'native1-minimum', 'native1-current', 'native1-028-minimum', 'native1-028-current'];
 
 function check(bool $condition, string $message): void
 {
@@ -27,10 +28,11 @@ function readJson(string $path): array
 function prepare(array $root, string $lane, ?array $candidate): array
 {
     check(in_array($lane, LANES, true), 'Unknown compatibility lane.');
-    check(($root['require'][CORE] ?? null) === '^0.22 || ^0.23 || ^0.24 || ^0.25 || ^0.26 || ^0.27', 'Keep the complete supported core range.');
+    check(($root['require'][CORE] ?? null) === '^0.22 || ^0.23 || ^0.24 || ^0.25 || ^0.26 || ^0.27 || ^0.28', 'Keep the complete supported core range.');
     $native = str_starts_with($lane, 'native1-');
-    $candidateRef = $native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF;
-    $candidateVersion = $native ? '0.27.0' : '0.26.0';
+    $core028 = str_contains($lane, '-028');
+    $candidateRef = $core028 ? NATIVE_CANDIDATE_028_REF : ($native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF);
+    $candidateVersion = $core028 ? '0.28.0' : ($native ? '0.27.0' : '0.26.0');
     $aiRange = $native ? '^1.0' : '^0.11.2';
     if ($lane === 'published-0.25') {
         $root['require'][CORE] = '0.25.0';
@@ -59,6 +61,7 @@ function verify(array $locked, array $installed, string $lane): array
 {
     check(in_array($lane, LANES, true), 'Unknown compatibility lane.');
     $native = str_starts_with($lane, 'native1-');
+    $core028 = str_contains($lane, '-028');
     $adoption = $native || str_starts_with($lane, 'adoption-');
     $evidence = [];
     foreach ([CORE, 'laravel/ai', 'laravel/framework', 'livewire/livewire'] as $name) {
@@ -79,8 +82,8 @@ function verify(array $locked, array $installed, string $lane): array
             && ($actual['dist']['url'] ?? null) === "https://api.github.com/repos/{$repository}/zipball/{$ref}", "{$name}: expected matching official archive.");
         if ($name === CORE) {
             if ($adoption || $lane === 'published-0.25') {
-                check($version === ($adoption ? ($native ? '0.27.0' : '0.26.0') : '0.25.0'), 'Wrong core version for lane.');
-                check($ref === ($adoption ? ($native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF) : PUBLISHED_REF), 'Wrong core source for lane.');
+                check($version === ($adoption ? ($core028 ? '0.28.0' : ($native ? '0.27.0' : '0.26.0')) : '0.25.0'), 'Wrong core version for lane.');
+                check($ref === ($adoption ? ($core028 ? NATIVE_CANDIDATE_028_REF : ($native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF)) : PUBLISHED_REF), 'Wrong core source for lane.');
             } else {
                 check((bool) preg_match('/^0\.(22|23|24|25)\./', $version), 'Lowest lane must retain a supported pre-0.26 core.');
             }
@@ -92,7 +95,7 @@ function verify(array $locked, array $installed, string $lane): array
         } elseif ($name === 'laravel/framework') {
             check(str_starts_with($version, '13.'), 'Expected Laravel 13.');
         } elseif ($name === 'livewire/livewire') {
-            $major = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum'], true) ? '3.' : '4.';
+            $major = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum', 'native1-028-minimum'], true) ? '3.' : '4.';
             check(str_starts_with($version, $major), 'Wrong Livewire major for lane.');
         }
         $evidence[] = "{$name} {$actual['version']} {$ref}";

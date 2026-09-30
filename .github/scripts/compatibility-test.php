@@ -29,12 +29,13 @@ $root = readJson(__DIR__.'/../../composer.json');
 $controls = 0;
 foreach (LANES as $lane) {
     $native = str_starts_with($lane, 'native1-');
+    $core028 = str_contains($lane, '-028');
     $adoption = $native || str_starts_with($lane, 'adoption-');
     $candidate = ['name' => CORE, 'require' => ['laravel/ai' => $native ? '^1.0' : '^0.11.2']];
-    $candidateRef = $native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF;
-    $minimum = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum'], true);
+    $candidateRef = $core028 ? NATIVE_CANDIDATE_028_REF : ($native ? NATIVE_CANDIDATE_REF : CANDIDATE_REF);
+    $minimum = in_array($lane, ['lowest', 'adoption-minimum', 'native1-minimum', 'native1-028-minimum'], true);
     $set = packages([
-        package(CORE, $adoption ? ($native ? '0.27.0' : '0.26.0') : 'v0.25.0', $adoption ? $candidateRef : PUBLISHED_REF),
+        package(CORE, $adoption ? ($core028 ? '0.28.0' : ($native ? '0.27.0' : '0.26.0')) : 'v0.25.0', $adoption ? $candidateRef : PUBLISHED_REF),
         package('laravel/ai', $adoption ? ($native ? 'v1.0.0' : 'v0.11.2') : 'v0.10.0', $adoption ? ($native ? NATIVE_AI_MINIMUM_REF : AI_MINIMUM_REF) : str_repeat('a', 40)),
         package('laravel/framework', 'v13.16.0', str_repeat('b', 40)),
         package('livewire/livewire', $minimum ? 'v3.0.0' : 'v4.1.0', str_repeat('c', 40)),
@@ -91,7 +92,7 @@ foreach (LANES as $lane) {
     rejects(fn () => verify($set, $differentInstalled, $lane), 'valid installed package differs from lock');
     $controls++;
     foreach ([CORE, 'laravel/ai'] as $name) {
-        if (($name === CORE && $lane === 'lowest') || ($name === 'laravel/ai' && ! in_array($lane, ['adoption-minimum', 'native1-minimum'], true))) {
+        if (($name === CORE && $lane === 'lowest') || ($name === 'laravel/ai' && ! in_array($lane, ['adoption-minimum', 'native1-minimum', 'native1-028-minimum'], true))) {
             continue;
         }
         $bad = $set;
@@ -111,6 +112,12 @@ foreach (LANES as $lane) {
         rejects(fn () => verify($bad, $bad, $lane), 'stale core AI contract');
         rejects(fn () => prepare($root, $lane, ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']]), 'stale candidate manifest contract');
         $controls += 4;
+        if ($core028) {
+            $bad = $set;
+            $bad[CORE] = array_replace($set[CORE], package(CORE, '0.27.0', NATIVE_CANDIDATE_REF));
+            rejects(fn () => verify($bad, $bad, $lane), 'previous native core generation');
+            $controls++;
+        }
     }
 }
 rejects(fn () => prepare($root, 'adoption-current', ['name' => 'example/fork', 'require' => ['laravel/ai' => '^0.11.2']]), 'wrong manifest identity');
@@ -119,4 +126,4 @@ $badRoot = $root;
 $badRoot['require'][CORE] = '^0.26';
 rejects(fn () => prepare($badRoot, 'adoption-current', $candidate), 'dropped older ranges');
 rejects(fn () => verify([], [], 'unknown'), 'unknown lane');
-echo 'Six positive lanes and '.($controls + 4)." negative dependency controls passed.\n";
+echo 'Eight positive lanes and '.($controls + 4)." negative dependency controls passed.\n";
