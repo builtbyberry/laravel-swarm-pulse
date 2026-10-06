@@ -82,7 +82,7 @@ application upgrade and native conversation migration contract; follow its
 upgrade guide when moving an application from an earlier core line.
 
 The v0.2.0 compatibility work extends this to the frozen v0.28 core candidate
-`6c3da95fcb3bc89a2ec0096346bd6efb11366cda` (release/v0.28.0), again with official
+`269f749102f8d4c525c12e5486c3f57893d78d6b` (release/v0.28.0), again with official
 AI 1.x minimum and current stable dependencies on PHP 8.4 and 8.5, running the same
 recorders, aggregate, rendered-card and installer tests. The two native 0.28 lanes
 add four jobs, for sixteen overall, and the earlier twelve are unchanged. Core v0.28

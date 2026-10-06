@@ -10,7 +10,7 @@ Compatibility with Laravel Swarm v0.28.0 (native Laravel AI feature access).
 
 ### Changed
 
-- Verify the actual recorders, aggregates, cards and installer on PHP 8.4/8.5 against the frozen v0.28 core candidate (`6c3da95`) with native AI minimum/current dependencies, adding two `native1-028` lanes (four jobs). Preserve earlier compatibility lanes and reject stale or mismatched candidate provenance, including a discriminating control that rejects a v0.27 core on the v0.28 lane. No runtime, schema or configuration change.
+- Verify the actual recorders, aggregates, cards and installer on PHP 8.4/8.5 against the frozen v0.28 core candidate (`269f749`) with native AI minimum/current dependencies, adding two `native1-028` lanes (four jobs). Preserve earlier compatibility lanes and reject stale or mismatched candidate provenance, including a discriminating control that rejects a v0.27 core on the v0.28 lane. No runtime, schema or configuration change.
 
 ## v0.1.8 - 2026-09-24
 
