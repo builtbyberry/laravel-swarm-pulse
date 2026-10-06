@@ -15,7 +15,7 @@ in core for the migration steps.
 ## Requirements
 
 - PHP 8.4+
-- `builtbyberry/laravel-swarm` ^0.22 through ^0.27
+- `builtbyberry/laravel-swarm` ^0.22 through ^0.28
 - Livewire ^3.0 or ^4.1
 
 ## Installation
@@ -77,9 +77,17 @@ The v0.1.8 compatibility work was validated against the frozen v0.27 core candid
 `48ad4ef690363ca40ba7d3bd50e63e7fbe76ba4b`, with official AI 1.0.0 minimum
 and current stable 1.x dependencies on PHP 8.4 and 8.5. They run the same
 recorders, aggregate, rendered-card and installer tests. The eight earlier
-compatibility jobs remain, for twelve jobs overall. Core v0.27 owns the
+compatibility jobs remain, for twelve jobs at v0.1.8. Core v0.27 owns the
 application upgrade and native conversation migration contract; follow its
 upgrade guide when moving an application from an earlier core line.
+
+The v0.2.0 compatibility work extends this to the frozen v0.28 core candidate
+`269f749102f8d4c525c12e5486c3f57893d78d6b` (release/v0.28.0), again with official
+AI 1.x minimum and current stable dependencies on PHP 8.4 and 8.5, running the same
+recorders, aggregate, rendered-card and installer tests. The two native 0.28 lanes
+add four jobs, for sixteen overall, and the earlier twelve are unchanged. Core v0.28
+adds native Laravel AI feature access through Swarm workflows; Pulse's aggregate
+observability is unaffected and requires no integration-code change.
 
 Pulse's integration remains aggregate observability of runs, steps, memory
 and audit outbox. This additive dependency update introduces no token billing,
